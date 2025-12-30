@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSocket } from './useSocket';
 import { useSearchParams } from 'next/navigation';
 
@@ -12,17 +12,16 @@ export interface PlayerIdentity {
   matchStatus: 'waiting' | 'playing' | 'finished';
 }
 
-let hasAttemptedAuth = false;
-
 export const useAuth = () => {
   const { socket, isConnected } = useSocket();
   const searchParams = useSearchParams();
   const [player, setPlayer] = useState<PlayerIdentity | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const hasAttemptedAuth = useRef(false);
 
   const authenticate = useCallback(() => {
-    if (!socket || !isConnected || hasAttemptedAuth) return;
+    if (!socket || !isConnected || hasAttemptedAuth.current) return;
 
     const matchId = searchParams.get('matchId');
     // Support both 'token' and 'matchToken' parameter names
@@ -33,7 +32,8 @@ export const useAuth = () => {
       return;
     }
 
-    hasAttemptedAuth = true;
+    console.log('[Auth] Authenticating...', { matchId, hasToken: !!token });
+    hasAttemptedAuth.current = true;
     setIsAuthenticating(true);
     setAuthError(null);
 
@@ -44,15 +44,17 @@ export const useAuth = () => {
     if (!socket) return;
 
     const onAuthenticated = (data: PlayerIdentity) => {
+      console.log('[Auth] Authenticated!', data);
       setPlayer(data);
       setIsAuthenticating(false);
       setAuthError(null);
     };
 
     const onAuthError = (error: { message: string }) => {
+      console.error('[Auth] Auth error:', error);
       setAuthError(error.message);
       setIsAuthenticating(false);
-      hasAttemptedAuth = false;
+      hasAttemptedAuth.current = false; // Allow retry on error
     };
 
     socket.on('authenticated', onAuthenticated);
@@ -66,7 +68,7 @@ export const useAuth = () => {
 
   // Auto-authenticate when connected
   useEffect(() => {
-    if (isConnected && !player && !isAuthenticating && !hasAttemptedAuth) {
+    if (isConnected && !player && !isAuthenticating && !hasAttemptedAuth.current) {
       // Use microtask to avoid setState in effect warning
       queueMicrotask(() => {
         authenticate();
