@@ -1,2 +1,2 @@
-web: HOSTNAME=0.0.0.0 node .next/standalone/server.js
+web: next start -H 0.0.0.0 -p $PORT
 
