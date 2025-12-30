@@ -25,7 +25,8 @@ export const useAuth = () => {
     if (!socket || !isConnected || hasAttemptedAuth) return;
 
     const matchId = searchParams.get('matchId');
-    const token = searchParams.get('token');
+    // Support both 'token' and 'matchToken' parameter names
+    const token = searchParams.get('token') || searchParams.get('matchToken');
 
     if (!matchId || !token) {
       setAuthError('Missing matchId or token in URL');
