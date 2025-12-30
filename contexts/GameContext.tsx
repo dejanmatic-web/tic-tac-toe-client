@@ -83,16 +83,21 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
     if (!socket) return;
 
     const onMatchStarted = (data: { matchId: string; players: GamePlayer[]; currentPlayer: 'X' | 'O' }) => {
+      console.log('[Game] Match started:', data, 'My playerId:', playerId);
       dispatch({ type: 'MATCH_STARTED', payload: data });
-      const myPlayer = data.players.find((p) => p.id === playerId);
+      // Use String() to ensure consistent comparison (server might send number or string)
+      const myPlayer = data.players.find((p) => String(p.id) === String(playerId));
       if (myPlayer?.symbol) {
+        console.log('[Game] Setting my symbol:', myPlayer.symbol);
         dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
       }
     };
 
     const onGameState = (data: { board: string[][]; currentPlayer: 'X' | 'O'; players: GamePlayer[] }) => {
+      console.log('[Game] Game state:', data);
       dispatch({ type: 'GAME_STATE', payload: data });
-      const myPlayer = data.players.find((p) => p.id === playerId);
+      // Use String() to ensure consistent comparison
+      const myPlayer = data.players.find((p) => String(p.id) === String(playerId));
       if (myPlayer?.symbol) {
         dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
       }
