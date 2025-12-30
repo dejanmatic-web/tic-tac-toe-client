@@ -89,7 +89,7 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
     const onMatchStarted = (data: { matchId: string; players: GamePlayer[]; currentPlayer: 'X' | 'O'; yourSymbol?: 'X' | 'O' }) => {
       console.log('[Game] Match started:', data);
       dispatch({ type: 'MATCH_STARTED', payload: data });
-      
+
       // Use yourSymbol directly if provided (server sends it individually to each player)
       if (data.yourSymbol) {
         console.log('[Game] Setting my symbol from yourSymbol:', data.yourSymbol);

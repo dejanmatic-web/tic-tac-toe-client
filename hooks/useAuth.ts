@@ -19,6 +19,17 @@ export const useAuth = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const hasAttemptedAuth = useRef(false);
+  const wasConnected = useRef(false);
+
+  // Reset auth state on reconnect
+  useEffect(() => {
+    if (isConnected && !wasConnected.current) {
+      // Just connected (or reconnected)
+      console.log('[Auth] Socket connected, resetting auth state');
+      hasAttemptedAuth.current = false;
+    }
+    wasConnected.current = isConnected;
+  }, [isConnected]);
 
   const authenticate = useCallback(() => {
     if (!socket || !isConnected || hasAttemptedAuth.current) return;
