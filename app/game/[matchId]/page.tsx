@@ -24,6 +24,21 @@ function GameContent() {
   const [socketError, setSocketError] = useState<string | null>(null);
   const [disconnectedPlayer, setDisconnectedPlayer] = useState<string | null>(null);
 
+  // Clear socket errors after 3 seconds
+  useEffect(() => {
+    if (socketError) {
+      const timer = setTimeout(() => {
+        setSocketError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [socketError]);
+
+  // Clear errors when turn changes
+  useEffect(() => {
+    setSocketError(null);
+  }, [state.currentPlayer]);
+
   useEffect(() => {
     if (!socket) return;
 

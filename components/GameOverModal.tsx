@@ -14,20 +14,49 @@ export function GameOverModal() {
     if (!state.winner) {
       return "It's a draw!";
     }
-    const winnerPlayer = state.players.find((p) => p.symbol === state.winner);
     if (state.winner === state.mySymbol) {
       return '🎉 You won!';
     }
+    const winnerPlayer = state.players.find((p) => p.symbol === state.winner);
     return `😔 ${winnerPlayer?.username || 'Opponent'} won!`;
   };
 
   const handleClose = () => {
     setDismissed(true);
-    if (typeof window !== 'undefined' && window.opener) {
-      setTimeout(() => {
-        window.close();
-      }, 1000);
+    
+    if (typeof window === 'undefined') return;
+    
+    // Try to notify parent window (GamerStake iframe)
+    try {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'GAME_FINISHED', winner: state.winner }, '*');
+      }
+    } catch (e) {
+      // Ignore cross-origin errors
     }
+    
+    // Try multiple ways to close/redirect
+    setTimeout(() => {
+      // If opened as popup, try to close
+      if (window.opener) {
+        window.close();
+        return;
+      }
+      
+      // If in iframe, try to redirect parent or self
+      try {
+        // Try to go back in history
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+      } catch (e) {
+        // Ignore
+      }
+      
+      // Last resort: redirect to GamerStake
+      window.location.href = 'https://dev.gamerstake.io';
+    }, 500);
   };
 
   return (
@@ -54,7 +83,7 @@ export function GameOverModal() {
                 onClick={handleClose}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
               >
-                Close
+                Return to Games
               </button>
             </div>
           </motion.div>
