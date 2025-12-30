@@ -78,7 +78,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 export function GameProvider({ children, playerId }: { children: ReactNode; playerId: string | null }) {
   const { socket } = useSocket();
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  
+
   // Use ref to always have access to latest playerId in callbacks
   const playerIdRef = useRef(playerId);
   playerIdRef.current = playerId;
@@ -86,17 +86,24 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
   useEffect(() => {
     if (!socket) return;
 
-    const onMatchStarted = (data: { matchId: string; players: GamePlayer[]; currentPlayer: 'X' | 'O' }) => {
-      const currentPlayerId = playerIdRef.current;
-      console.log('[Game] Match started:', data, 'My playerId:', currentPlayerId);
+    const onMatchStarted = (data: { matchId: string; players: GamePlayer[]; currentPlayer: 'X' | 'O'; yourSymbol?: 'X' | 'O' }) => {
+      console.log('[Game] Match started:', data);
       dispatch({ type: 'MATCH_STARTED', payload: data });
-      // Use String() to ensure consistent comparison (server might send number or string)
-      const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
-      if (myPlayer?.symbol) {
-        console.log('[Game] Setting my symbol:', myPlayer.symbol);
-        dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
+      
+      // Use yourSymbol directly if provided (server sends it individually to each player)
+      if (data.yourSymbol) {
+        console.log('[Game] Setting my symbol from yourSymbol:', data.yourSymbol);
+        dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: data.yourSymbol } });
       } else {
-        console.warn('[Game] Could not find my player in match_started. Players:', data.players, 'My ID:', currentPlayerId);
+        // Fallback: try to find by ID
+        const currentPlayerId = playerIdRef.current;
+        const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
+        if (myPlayer?.symbol) {
+          console.log('[Game] Setting my symbol from players array:', myPlayer.symbol);
+          dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
+        } else {
+          console.warn('[Game] Could not determine my symbol. Players:', data.players, 'My ID:', currentPlayerId);
+        }
       }
     };
 
