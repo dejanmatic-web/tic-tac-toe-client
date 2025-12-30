@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, ReactNode, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useSocket } from '@/hooks/useSocket';
 import { GameState, GamePlayer } from '@/types/game';
@@ -78,26 +78,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 export function GameProvider({ children, playerId }: { children: ReactNode; playerId: string | null }) {
   const { socket } = useSocket();
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  
+  // Use ref to always have access to latest playerId in callbacks
+  const playerIdRef = useRef(playerId);
+  playerIdRef.current = playerId;
 
   useEffect(() => {
     if (!socket) return;
 
     const onMatchStarted = (data: { matchId: string; players: GamePlayer[]; currentPlayer: 'X' | 'O' }) => {
-      console.log('[Game] Match started:', data, 'My playerId:', playerId);
+      const currentPlayerId = playerIdRef.current;
+      console.log('[Game] Match started:', data, 'My playerId:', currentPlayerId);
       dispatch({ type: 'MATCH_STARTED', payload: data });
       // Use String() to ensure consistent comparison (server might send number or string)
-      const myPlayer = data.players.find((p) => String(p.id) === String(playerId));
+      const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
       if (myPlayer?.symbol) {
         console.log('[Game] Setting my symbol:', myPlayer.symbol);
         dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
+      } else {
+        console.warn('[Game] Could not find my player in match_started. Players:', data.players, 'My ID:', currentPlayerId);
       }
     };
 
     const onGameState = (data: { board: string[][]; currentPlayer: 'X' | 'O'; players: GamePlayer[] }) => {
+      const currentPlayerId = playerIdRef.current;
       console.log('[Game] Game state:', data);
       dispatch({ type: 'GAME_STATE', payload: data });
       // Use String() to ensure consistent comparison
-      const myPlayer = data.players.find((p) => String(p.id) === String(playerId));
+      const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
       if (myPlayer?.symbol) {
         dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
       }
@@ -122,7 +130,7 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
       socket.off('move_made', onMoveMade);
       socket.off('game_finished', onGameFinished);
     };
-  }, [socket, playerId]);
+  }, [socket]); // Remove playerId from deps - we use ref instead
 
   const makeMove = (row: number, col: number) => {
     if (!socket || state.status !== 'playing' || state.currentPlayer !== state.mySymbol) {
