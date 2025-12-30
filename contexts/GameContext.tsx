@@ -107,14 +107,21 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
       }
     };
 
-    const onGameState = (data: { board: string[][]; currentPlayer: 'X' | 'O'; players: GamePlayer[] }) => {
-      const currentPlayerId = playerIdRef.current;
+    const onGameState = (data: { board: string[][]; currentPlayer: 'X' | 'O'; players: GamePlayer[]; yourSymbol?: 'X' | 'O' }) => {
       console.log('[Game] Game state:', data);
       dispatch({ type: 'GAME_STATE', payload: data });
-      // Use String() to ensure consistent comparison
-      const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
-      if (myPlayer?.symbol) {
-        dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
+      
+      // Use yourSymbol directly if provided (for reconnecting players)
+      if (data.yourSymbol) {
+        console.log('[Game] Setting my symbol from game_state yourSymbol:', data.yourSymbol);
+        dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: data.yourSymbol } });
+      } else {
+        // Fallback: find by ID
+        const currentPlayerId = playerIdRef.current;
+        const myPlayer = data.players.find((p) => String(p.id) === String(currentPlayerId));
+        if (myPlayer?.symbol) {
+          dispatch({ type: 'SET_MY_SYMBOL', payload: { symbol: myPlayer.symbol } });
+        }
       }
     };
 
@@ -140,9 +147,17 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
   }, [socket]); // Remove playerId from deps - we use ref instead
 
   const makeMove = (row: number, col: number) => {
-    if (!socket || state.status !== 'playing' || state.currentPlayer !== state.mySymbol) {
+    // Check all conditions before allowing move
+    if (!socket || !state.mySymbol || state.status !== 'playing' || state.currentPlayer !== state.mySymbol) {
+      console.log('[Game] Move blocked:', { 
+        hasSocket: !!socket, 
+        mySymbol: state.mySymbol, 
+        status: state.status, 
+        currentPlayer: state.currentPlayer 
+      });
       return;
     }
+    console.log('[Game] Making move:', { row, col, mySymbol: state.mySymbol });
     socket.emit('make_move', { row, col });
   };
 

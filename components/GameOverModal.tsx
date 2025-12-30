@@ -23,9 +23,9 @@ export function GameOverModal() {
 
   const handleClose = () => {
     setDismissed(true);
-    
+
     if (typeof window === 'undefined') return;
-    
+
     // Try to notify parent window (GamerStake iframe)
     try {
       if (window.parent !== window) {
@@ -34,7 +34,7 @@ export function GameOverModal() {
     } catch (e) {
       // Ignore cross-origin errors
     }
-    
+
     // Try multiple ways to close/redirect
     setTimeout(() => {
       // If opened as popup, try to close
@@ -42,7 +42,7 @@ export function GameOverModal() {
         window.close();
         return;
       }
-      
+
       // If in iframe, try to redirect parent or self
       try {
         // Try to go back in history
@@ -53,7 +53,7 @@ export function GameOverModal() {
       } catch (e) {
         // Ignore
       }
-      
+
       // Last resort: redirect to GamerStake
       window.location.href = 'https://dev.gamerstake.io';
     }, 500);
