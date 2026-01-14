@@ -38,12 +38,21 @@ export const useAuth = () => {
     // Support both 'token' and 'matchToken' parameter names
     const token = searchParams.get('token') || searchParams.get('matchToken');
 
+    // Log full URL and params for debugging
+    console.log('[Auth] 🌐 Current URL:', window.location.href);
+    console.log('[Auth] 📋 URL Params:');
+    console.log('   → matchId:', matchId);
+    console.log('   → token:', token ? `${token.substring(0, 30)}... (length: ${token.length})` : 'null');
+    console.log('   → All params:', Object.fromEntries(searchParams.entries()));
+
     if (!matchId || !token) {
       setAuthError('Missing matchId or token in URL');
       return;
     }
 
     console.log('[Auth] Authenticating...', { matchId, hasToken: !!token });
+    console.log('[Auth] 📤 Emitting "authenticate" event to server');
+    console.log('   → Payload: { matchId: "' + matchId + '", token: "' + token.substring(0, 20) + '..." }');
     hasAttemptedAuth.current = true;
     setIsAuthenticating(true);
     setAuthError(null);
@@ -55,7 +64,13 @@ export const useAuth = () => {
     if (!socket) return;
 
     const onAuthenticated = (data: PlayerIdentity) => {
-      console.log('[Auth] Authenticated!', data);
+      console.log('[Auth] ✅ Authenticated!');
+      console.log('   → playerId:', data.playerId);
+      console.log('   → username:', data.username);
+      console.log('   → matchId:', data.matchId);
+      console.log('   → symbol:', data.symbol);
+      console.log('   → matchStatus:', data.matchStatus);
+      console.log('   → Full response:', JSON.stringify(data, null, 2));
       setPlayer(data);
       setIsAuthenticating(false);
       setAuthError(null);

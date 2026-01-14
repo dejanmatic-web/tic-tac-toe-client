@@ -26,13 +26,44 @@ export function GameOverModal() {
 
     if (typeof window === 'undefined') return;
 
+    // Prepare complete game finished information
+    const gameFinishedData = {
+      type: 'GAME_FINISHED',
+      matchId: state.matchId,
+      winner: state.winner, // 'X', 'O', or null for draw
+      isDraw: state.winner === null,
+      players: state.players.map(p => ({
+        id: p.id,
+        username: p.username,
+        symbol: p.symbol,
+        isWinner: p.symbol === state.winner,
+      })),
+      board: state.board,
+    };
+
+    console.log('[GameOverModal] Game finished, sending notification:', gameFinishedData);
+
     // Try to notify parent window (GamerStake iframe)
     try {
       if (window.parent !== window) {
-        window.parent.postMessage({ type: 'GAME_FINISHED', winner: state.winner }, '*');
+        window.parent.postMessage(gameFinishedData, '*');
+        console.log('[GameOverModal] Sent postMessage to parent window');
+      } else {
+        console.log('[GameOverModal] Not in iframe, skipping postMessage');
       }
     } catch (e) {
+      console.error('[GameOverModal] Failed to send postMessage:', e);
       // Ignore cross-origin errors
+    }
+
+    // Also try window.opener for popup scenarios
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(gameFinishedData, '*');
+        console.log('[GameOverModal] Sent postMessage to opener window');
+      }
+    } catch (e) {
+      console.error('[GameOverModal] Failed to send postMessage to opener:', e);
     }
 
     // Try multiple ways to close/redirect

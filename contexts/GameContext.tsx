@@ -110,7 +110,7 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
     const onGameState = (data: { board: string[][]; currentPlayer: 'X' | 'O'; players: GamePlayer[]; yourSymbol?: 'X' | 'O' }) => {
       console.log('[Game] Game state:', data);
       dispatch({ type: 'GAME_STATE', payload: data });
-      
+
       // Use yourSymbol directly if provided (for reconnecting players)
       if (data.yourSymbol) {
         console.log('[Game] Setting my symbol from game_state yourSymbol:', data.yourSymbol);
@@ -149,11 +149,11 @@ export function GameProvider({ children, playerId }: { children: ReactNode; play
   const makeMove = (row: number, col: number) => {
     // Check all conditions before allowing move
     if (!socket || !state.mySymbol || state.status !== 'playing' || state.currentPlayer !== state.mySymbol) {
-      console.log('[Game] Move blocked:', { 
-        hasSocket: !!socket, 
-        mySymbol: state.mySymbol, 
-        status: state.status, 
-        currentPlayer: state.currentPlayer 
+      console.log('[Game] Move blocked:', {
+        hasSocket: !!socket,
+        mySymbol: state.mySymbol,
+        status: state.status,
+        currentPlayer: state.currentPlayer
       });
       return;
     }
